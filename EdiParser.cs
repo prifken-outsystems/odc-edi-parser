@@ -321,6 +321,8 @@ namespace EdiParserLibrary
                             case "VN": fields["vendorRefNumber"] = Get(seg, 2); break;
                             case "CT": fields["contractNumber"]  = Get(seg, 2); break;
                             case "ZZ": fields["customRef"]       = Get(seg, 2); break;
+                            case "TJ": fields["vendorNif"]       = Get(seg, 2); break;  // Tax ID (NIF)
+                            case "IA": fields["vendorIban"]      = Get(seg, 2); break;  // IBAN
                         }
                         break;
 
@@ -361,7 +363,12 @@ namespace EdiParserLibrary
                     case SEG_N4:
                         // N4 * <city> * <state> * <zip> * <country>
                         if (currentN1 == N1_VENDOR || currentN1 == N1_VENDOR_2)
-                            vendorCity = $"{Get(seg, 1)}, {Get(seg, 2)} {Get(seg, 3)}".Trim(' ', ',');
+                        {
+                            string? city = Get(seg, 1);
+                            string? zip  = Get(seg, 3);
+                            vendorCity = (city != null && zip != null) ? $"{city}, {zip}"
+                                       : city ?? zip;
+                        }
                         break;
 
                     // ── Line items ───────────────────────────────────────────
