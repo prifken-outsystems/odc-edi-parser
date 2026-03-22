@@ -121,38 +121,87 @@ namespace EdiParserLibrary
 
         public string ParsePurchaseOrder(byte[] ediBytes)
         {
+            var log = new StringBuilder();
+            var start = DateTime.UtcNow;
+            log.AppendLine($"=== EdiParser.ParsePurchaseOrder ===");
+            log.AppendLine($"Started: {start:yyyy-MM-dd HH:mm:ss.fff} UTC");
+
             try
             {
+                log.AppendLine($"Input bytes: {ediBytes?.Length ?? 0}");
+
+                if (ediBytes == null || ediBytes.Length == 0)
+                    throw new ArgumentException("ediBytes is null or empty");
+
+                // Peek at raw content for diagnostics
+                string preview = Encoding.ASCII.GetString(ediBytes, 0, Math.Min(80, ediBytes.Length));
+                log.AppendLine($"Content preview: {preview}");
+
+                log.AppendLine("[1] Parsing envelope...");
                 var (segments, elementSep) = ParseEnvelope(ediBytes);
+                log.AppendLine($"    Element separator: '{elementSep}'");
+                log.AppendLine($"    Segments found: {segments.Count}");
+                log.AppendLine($"    Segment codes: {string.Join(", ", segments.Select(s => s[0].Trim()).Distinct())}");
+
+                log.AppendLine("[2] Extracting PO data...");
                 var result = ExtractPurchaseOrderData(segments);
+
+                log.AppendLine($"[3] Extraction complete");
+                log.AppendLine($"    Duration: {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms");
+
+                result["executionLog"] = log.ToString();
                 return JsonSerializer.Serialize(result, JsonOpts);
             }
             catch (Exception ex)
             {
+                log.AppendLine($"[ERROR] {ex.GetType().Name}: {ex.Message}");
+                log.AppendLine($"Stack: {ex.StackTrace}");
                 return JsonSerializer.Serialize(new
                 {
                     error = true,
                     message = ex.Message,
-                    overallConfidence = "low"
+                    overallConfidence = "low",
+                    executionLog = log.ToString()
                 }, JsonOpts);
             }
         }
 
         public string ExtractLineItems(byte[] ediBytes)
         {
+            var log = new StringBuilder();
+            log.AppendLine($"=== EdiParser.ExtractLineItems ===");
+            log.AppendLine($"Started: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} UTC");
+
             try
             {
+                log.AppendLine($"Input bytes: {ediBytes?.Length ?? 0}");
+
+                if (ediBytes == null || ediBytes.Length == 0)
+                    throw new ArgumentException("ediBytes is null or empty");
+
                 var (segments, _) = ParseEnvelope(ediBytes);
+                log.AppendLine($"Segments found: {segments.Count}");
+
                 var items = ExtractLineItemData(segments);
-                return JsonSerializer.Serialize(items, JsonOpts);
+                log.AppendLine($"Line items extracted: {items.Count}");
+
+                // Return items wrapped with log for diagnostics
+                return JsonSerializer.Serialize(new
+                {
+                    items,
+                    lineItemCount = items.Count,
+                    executionLog = log.ToString()
+                }, JsonOpts);
             }
             catch (Exception ex)
             {
+                log.AppendLine($"[ERROR] {ex.GetType().Name}: {ex.Message}");
                 return JsonSerializer.Serialize(new
                 {
                     error = true,
                     message = ex.Message,
-                    items = Array.Empty<EdiLineItem>()
+                    items = Array.Empty<EdiLineItem>(),
+                    executionLog = log.ToString()
                 }, JsonOpts);
             }
         }
