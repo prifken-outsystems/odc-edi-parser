@@ -285,6 +285,9 @@ jobs:
           "STATUS=$status" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           if (-not [string]::IsNullOrEmpty($libraryKey)) {
             "LIBRARY_KEY=$libraryKey" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            $libraryUrl = "${{ secrets.ODC_PORTAL_URL }}/apps/library?id=$libraryKey"
+            "LIBRARY_URL=$libraryUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            Write-Host "Library URL: $libraryUrl"
           }
 
       # ── Step 6: Tag revision (auto-increments patch version) ─────────────
@@ -346,6 +349,7 @@ jobs:
         shell: pwsh
         env:
           LIBRARY_KEY:     ${{ steps.poll_operation.outputs.LIBRARY_KEY }}
+          LIBRARY_URL:     ${{ steps.poll_operation.outputs.LIBRARY_URL }}
           REVISION_NUMBER: ${{ steps.tag_revision.outputs.REVISION_NUMBER }}
           VERSION_TAG:     ${{ steps.tag_revision.outputs.VERSION_TAG }}
         run: |
@@ -356,21 +360,28 @@ jobs:
           Write-Output "- **Library Key:** ``$env:LIBRARY_KEY``" >> $env:GITHUB_STEP_SUMMARY
           Write-Output "- **Portal:** ${{ secrets.ODC_PORTAL_URL }}" >> $env:GITHUB_STEP_SUMMARY
           Write-Output "- **Run:** #${{ github.run_number }}" >> $env:GITHUB_STEP_SUMMARY
+          if (-not [string]::IsNullOrEmpty($env:LIBRARY_URL)) {
+            Write-Output "" >> $env:GITHUB_STEP_SUMMARY
+            Write-Output "### Direct Link" >> $env:GITHUB_STEP_SUMMARY
+            Write-Output "[$env:LIBRARY_URL]($env:LIBRARY_URL)" >> $env:GITHUB_STEP_SUMMARY
+          }
 
       - name: Summary (Awaiting Approval)
         if: success() && steps.poll_operation.outputs.STATUS == 'ReadyForReview'
         shell: pwsh
         env:
-          LIBRARY_URI: ${{ steps.poll_operation.outputs.LIBRARY_URI }}
+          LIBRARY_KEY: ${{ steps.poll_operation.outputs.LIBRARY_KEY }}
+          LIBRARY_URL: ${{ steps.poll_operation.outputs.LIBRARY_URL }}
         run: |
           Write-Output "## Upload Complete — Approval Required" >> $env:GITHUB_STEP_SUMMARY
           Write-Output "Library uploaded and processed. Manual security review required." >> $env:GITHUB_STEP_SUMMARY
           Write-Output "" >> $env:GITHUB_STEP_SUMMARY
-          Write-Output "1. Go to [${{ secrets.ODC_PORTAL_URL }}](${{ secrets.ODC_PORTAL_URL }})" >> $env:GITHUB_STEP_SUMMARY
-          Write-Output "2. Libraries → External Libraries" >> $env:GITHUB_STEP_SUMMARY
-          Write-Output "3. Find **${{ env.LIBRARY_DISPLAY_NAME }}** → Approve" >> $env:GITHUB_STEP_SUMMARY
-          if (-not [string]::IsNullOrEmpty($env:LIBRARY_URI)) {
-            Write-Output "4. Or use [direct link]($env:LIBRARY_URI)" >> $env:GITHUB_STEP_SUMMARY
+          if (-not [string]::IsNullOrEmpty($env:LIBRARY_URL)) {
+            Write-Output "### Review here:" >> $env:GITHUB_STEP_SUMMARY
+            Write-Output "[$env:LIBRARY_URL]($env:LIBRARY_URL)" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            Write-Output "1. Go to [${{ secrets.ODC_PORTAL_URL }}](${{ secrets.ODC_PORTAL_URL }})" >> $env:GITHUB_STEP_SUMMARY
+            Write-Output "2. Libraries → External Libraries → **${{ env.LIBRARY_DISPLAY_NAME }}** → Approve" >> $env:GITHUB_STEP_SUMMARY
           }
 
       - name: Summary (Failed)

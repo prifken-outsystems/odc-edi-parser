@@ -59,19 +59,30 @@ If there are no changes to commit (already up to date), just push:
 git push origin main
 ```
 
-### 5. Get the GitHub Actions Run URL
+### 5. Get the GitHub Actions Run URL and Library URL
 
-Retrieve the URL of the triggered workflow run:
+Retrieve the latest workflow run:
 
 ```bash
-gh run list --repo prifken-outsystems/odc-edi-parser --limit 1 --json url,status,name 2>/dev/null
+gh run list --repo prifken-outsystems/odc-edi-parser --limit 1 --json url,status,databaseId 2>/dev/null
 ```
 
 Wait up to 10 seconds and retry once if the run hasn't appeared yet.
 
+Also retrieve the library URL from the last successful run's outputs if available:
+
+```bash
+gh run view --repo prifken-outsystems/odc-edi-parser $(gh run list --repo prifken-outsystems/odc-edi-parser --limit 2 --json databaseId --jq '.[1].databaseId') --json jobs 2>/dev/null | grep -o 'LIBRARY_URL=.*' | head -1
+```
+
+The library URL follows the pattern:
+`https://ailaunchfuture.outsystems.dev/apps/library?id=<libraryKey>`
+
+Use the known library key `d755733e-a73f-f774-6a08-f98c0a98f4e6` to construct it if the run outputs aren't available yet.
+
 ### 6. Print the Deployment Status Block
 
-Print this block with the actual run URL filled in:
+Print this block with the actual URLs filled in:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -89,10 +100,9 @@ Print this block with the actual run URL filled in:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  When generation completes, review and approve at:
+  Review and approve the new revision here:
 
-  https://ailaunchfuture.outsystems.dev
-  → Libraries → External Libraries → EdiParser
+  https://ailaunchfuture.outsystems.dev/apps/library?id=d755733e-a73f-f774-6a08-f98c0a98f4e6
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
