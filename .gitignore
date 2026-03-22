@@ -1,0 +1,10 @@
+bin/
+obj/
+publish/
+*.zip
+.vs/
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db

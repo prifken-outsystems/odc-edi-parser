@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>EdiParserLibrary</AssemblyName>
+    <RootNamespace>EdiParserLibrary</RootNamespace>
+    <Description>OutSystems External Library — EDI 850 Purchase Order parser. Extracts vendor data, line items, amounts, and PO metadata with confidence scores.</Description>
+    <Version>1.0.0</Version>
+
+    <!-- ODC Lambda deployment settings — DO NOT change these -->
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishSingleFile>false</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OutSystems.ExternalLibraries.SDK" Version="1.*" />
+  </ItemGroup>
+
+</Project>

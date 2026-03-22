@@ -1,0 +1,74 @@
+name: Build & Validate PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - '.github/**'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  PROJECT_FILE: 'EdiParserLibrary.csproj'
+  ARTIFACT_NAME: 'EdiParserLibrary'
+
+jobs:
+  build:
+    name: Build & Validate
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.PROJECT_FILE }}
+
+      - name: Build (Release)
+        run: dotnet build ${{ env.PROJECT_FILE }} --configuration Release --no-restore
+
+      - name: Publish for linux-x64
+        shell: pwsh
+        run: |
+          dotnet publish ${{ env.PROJECT_FILE }} `
+            --configuration Release `
+            --runtime linux-x64 `
+            --output ./publish `
+            --no-build `
+            --self-contained true
+
+      - name: Create deployment ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path ./publish/* -DestinationPath EdiParserLibrary-pr.zip -Force
+          $size = (Get-Item EdiParserLibrary-pr.zip).Length / 1MB
+          Write-Host "Package size: $($size.ToString('F2')) MB"
+
+      - name: Validate package contents
+        shell: pwsh
+        run: |
+          $required = @("EdiParserLibrary.dll", "OutSystems.ExternalLibraries.SDK.dll")
+          $missing = @()
+          foreach ($f in $required) {
+            if (-not (Test-Path "./publish/$f")) { $missing += $f }
+          }
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing required files: $($missing -join ', ')"
+            exit 1
+          }
+          Write-Host "All required files present"
+
+      - name: Build summary
+        shell: pwsh
+        run: |
+          Write-Output "## Build Validated" >> $env:GITHUB_STEP_SUMMARY
+          Write-Output "- Project: ${{ env.PROJECT_FILE }}" >> $env:GITHUB_STEP_SUMMARY
+          Write-Output "- Runtime: linux-x64" >> $env:GITHUB_STEP_SUMMARY
+          Write-Output "- Status: Ready for merge" >> $env:GITHUB_STEP_SUMMARY
