@@ -5,6 +5,8 @@ publish/
 .vs/
 .vscode/
 .idea/
-.claude/
+# .claude/ — keep commands but ignore session state
+.claude/settings*
+.claude/projects/
 .DS_Store
 Thumbs.db
