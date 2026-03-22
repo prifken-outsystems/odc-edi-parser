@@ -79,8 +79,6 @@ namespace EdiParserLibrary
         )]
         string GetBuildVersion();
 
-        [OSAction(Description = "Returns 'Hello World'. Smoke test to verify the library is connected and callable.")]
-        string HelloWorld();
     }
 
     // ── Implementation ────────────────────────────────────────────────────────
@@ -208,8 +206,6 @@ namespace EdiParserLibrary
                 }, JsonOpts);
             }
         }
-
-        public string HelloWorld() => "Hello World";
 
         public string GetBuildVersion()
         {
